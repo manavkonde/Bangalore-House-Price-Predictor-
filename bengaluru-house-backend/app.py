@@ -34,13 +34,21 @@ def get_location_names():
 
 @app.post("/predict_home_price")
 def predict_home_price(request: PredictionRequest):
-    estimated_price = util.get_estimated_price(
-        request.location,
-        request.total_sqft,
-        request.bhk,
-        request.bath
-    )
-    return {"estimated_price": estimated_price}
+    try:
+        print(f"Received prediction request: {request.dict()}")
+        estimated_price = util.get_estimated_price(
+            request.location,
+            request.total_sqft,
+            request.bhk,
+            request.bath
+        )
+        print(f"Prediction result: {estimated_price}")
+        return {"estimated_price": estimated_price}
+    except Exception as e:
+        print(f"Error in prediction: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}, 500
 
 if __name__ == "__main__":
     util.load_save_artifacts()

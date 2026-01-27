@@ -38,11 +38,11 @@ def load_save_artifacts():
 
     # path of server directory (where util.py exists)
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    artifacts_dir = os.path.join(base_dir, "Artifacts")
+    artifacts_dir = base_dir  # Files are in the root directory
 
     # build correct paths
     columns_path = os.path.join(artifacts_dir, "columns.json")
-    model_path = os.path.join(artifacts_dir, "bangaluru_home_price_model.pickle")
+    model_path = os.path.join(artifacts_dir, "bangaluru_home_price_model.pickel")
 
     with open(columns_path, "r") as f:
         __data_columns = json.load(f)["data_columns"]

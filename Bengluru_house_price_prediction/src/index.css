@@ -1,0 +1,220 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Core palette - Teal & Coral theme */
+    --background: 30 25% 98%;
+    --foreground: 200 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 200 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 200 25% 15%;
+
+    /* Primary - Deep Teal */
+    --primary: 185 65% 25%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Warm Coral */
+    --secondary: 15 85% 60%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 200 15% 92%;
+    --muted-foreground: 200 15% 45%;
+
+    /* Accent - Ocean Blue */
+    --accent: 195 75% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 200 15% 88%;
+    --input: 200 15% 88%;
+    --ring: 185 65% 35%;
+
+    --radius: 0.75rem;
+
+    /* Custom tokens */
+    --gradient-primary: linear-gradient(135deg, hsl(185 65% 25%), hsl(195 75% 35%));
+    --gradient-secondary: linear-gradient(135deg, hsl(15 85% 55%), hsl(25 90% 60%));
+    --gradient-hero: linear-gradient(180deg, hsl(195 40% 96%) 0%, hsl(185 30% 94%) 50%, hsl(30 25% 98%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(200 20% 98%));
+    
+    --shadow-soft: 0 4px 20px -4px hsl(200 25% 15% / 0.1);
+    --shadow-glow: 0 8px 40px -8px hsl(185 65% 25% / 0.25);
+    --shadow-card: 0 2px 12px -2px hsl(200 25% 15% / 0.08);
+    --shadow-hover: 0 12px 32px -8px hsl(200 25% 15% / 0.15);
+
+    /* Amenity colors */
+    --amenity-school: 210 80% 50%;
+    --amenity-hospital: 0 75% 55%;
+    --amenity-park: 145 65% 40%;
+    --amenity-restaurant: 35 90% 50%;
+    --amenity-transport: 270 60% 55%;
+    --amenity-shopping: 320 70% 50%;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 200 25% 8%;
+    --foreground: 200 15% 95%;
+
+    --card: 200 20% 12%;
+    --card-foreground: 200 15% 95%;
+
+    --popover: 200 20% 12%;
+    --popover-foreground: 200 15% 95%;
+
+    --primary: 185 60% 50%;
+    --primary-foreground: 200 25% 8%;
+
+    --secondary: 15 80% 55%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 200 20% 18%;
+    --muted-foreground: 200 15% 60%;
+
+    --accent: 195 70% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 200 20% 22%;
+    --input: 200 20% 22%;
+    --ring: 185 60% 50%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(185 60% 45%), hsl(195 70% 50%));
+    --gradient-hero: linear-gradient(180deg, hsl(200 25% 10%) 0%, hsl(200 20% 12%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(200 20% 14%), hsl(200 20% 12%));
+
+    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.3);
+    --shadow-glow: 0 8px 40px -8px hsl(185 60% 50% / 0.3);
+    --shadow-card: 0 2px 12px -2px hsl(0 0% 0% / 0.2);
+    --shadow-hover: 0 12px 32px -8px hsl(0 0% 0% / 0.4);
+    
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-gradient-primary {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
+  }
+
+  .text-gradient-secondary {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-secondary);
+  }
+
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .bg-gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+
+  .bg-gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .bg-gradient-card {
+    background: var(--gradient-card);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-hover {
+    box-shadow: var(--shadow-hover);
+  }
+
+  .glass-card {
+    @apply backdrop-blur-xl bg-card/80 border border-border/50;
+  }
+}
+
+/* Mapbox overrides */
+.mapboxgl-ctrl-attrib {
+  display: none !important;
+}
+
+.mapboxgl-popup-content {
+  @apply rounded-lg shadow-lg p-3 bg-card;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.mapboxgl-popup-close-button {
+  @apply text-foreground text-lg pr-2;
+}
+
+/* Leaflet overrides */
+.leaflet-popup-content-wrapper {
+  @apply rounded-lg shadow-lg bg-card border border-border/50;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+}
+
+.leaflet-popup-tip {
+  @apply bg-card;
+}
+
+.leaflet-container {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.custom-marker, .amenity-marker {
+  background: transparent;
+  border: none;
+}

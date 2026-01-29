@@ -75,9 +75,6 @@ df5['price_per_sqft']=df5['price']*100000/df5['total_sqft']
 # First split
 df5['location'] = df5['location'].apply(lambda x: x.strip())
 
-# Then explode to create separate rows for each word
-df5 = df5.explode('location')
-
 # Now group and count
 # Group by the full location name (as is)
 location_stats = df5.groupby('location')['location'].count().sort_values(ascending=False)

@@ -7,12 +7,24 @@ import {
   Train,
   ShoppingBag,
   Star,
-  MapPin
+  MapPin,
+  Globe
 } from "lucide-react";
 import { generateNearbyAmenities, AMENITY_TYPES } from "@/data/locations";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { getCities } from "@/services/api";
+import { useState, useEffect } from "react";
 
 interface NearbyAmenitiesProps {
+  city?: string;
+  onCityChange?: (city: string) => void;
   location: string;
 }
 
@@ -39,8 +51,22 @@ import { getLocationCoordinates } from "@/data/locations";
 
 // ... imports remain ...
 
-export function NearbyAmenities({ location }: NearbyAmenitiesProps) {
-  const locationCoords = getLocationCoordinates(location);
+export function NearbyAmenities({ city = "delhi", onCityChange, location }: NearbyAmenitiesProps) {
+  const [cities, setCities] = useState<string[]>(["delhi", "bengaluru", "chennai", "hyderabad", "kolkata", "combined"]);
+
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const fetchedCities = await getCities();
+        setCities(fetchedCities);
+      } catch (error) {
+        console.error("Failed to fetch cities:", error);
+      }
+    };
+    fetchCities();
+  }, []);
+
+  const locationCoords = getLocationCoordinates(location, city);
   const { data: osmAmenities, isLoading } = useAmenities(locationCoords[1], locationCoords[0]);
 
   const amenities = osmAmenities || [];
@@ -61,10 +87,27 @@ export function NearbyAmenities({ location }: NearbyAmenitiesProps) {
       transition={{ duration: 0.5 }}
       className="space-y-6"
     >
-      <div className="flex items-center gap-2">
-        <MapPin className="h-5 w-5 text-primary" />
-        <h3 className="text-lg font-display font-semibold">Nearby Amenities</h3>
-        <span className="text-sm text-muted-foreground capitalize">in {location}</span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <MapPin className="h-5 w-5 text-primary" />
+          <h3 className="text-lg font-display font-semibold">Nearby Amenities</h3>
+          <span className="text-sm text-muted-foreground capitalize">in {location}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Globe className="h-4 w-4 text-muted-foreground" />
+          <Select value={city} onValueChange={(value) => onCityChange?.(value)}>
+            <SelectTrigger className="w-full sm:w-[130px] md:h-10 h-9 text-xs min-h-[44px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {cities.map((c) => (
+                <SelectItem key={c} value={c} className="capitalize">
+                  {c.charAt(0).toUpperCase() + c.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

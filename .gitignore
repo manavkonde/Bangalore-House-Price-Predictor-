@@ -40,5 +40,5 @@ ENV/
 Thumbs.db
 
 # Model artifacts (optional: if you want to keep them in git, remove these)
-# bangaluru_home_price_model.pickel
+# bengaluru_home_price_model.pickle
 # columns.json

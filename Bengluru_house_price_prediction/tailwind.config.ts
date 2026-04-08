@@ -14,8 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'sans-serif'],
-        display: ['Space Grotesk', 'sans-serif'],
+        sans: ['Inter', 'DM Sans', 'sans-serif'],
+        display: ['Playfair Display', 'serif'],
+        body: ['Inter', 'DM Sans', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -69,6 +70,31 @@ export default {
           transport: "hsl(var(--amenity-transport))",
           shopping: "hsl(var(--amenity-shopping))",
         },
+        // Extended premium colors
+        navy: {
+          50: '#f0f3f9',
+          100: '#d9e1f0',
+          200: '#b3c3e1',
+          300: '#8da5d2',
+          400: '#6787c3',
+          500: '#4169b4',
+          600: '#345490',
+          700: '#273f6c',
+          800: '#1a2a48',
+          900: '#0d1524',
+        },
+        gold: {
+          50: '#fffbf0',
+          100: '#fff3d1',
+          200: '#ffe7a3',
+          300: '#ffdb75',
+          400: '#ffcf47',
+          500: '#f0a500',
+          600: '#c78800',
+          700: '#9e6b00',
+          800: '#754f00',
+          900: '#4c3300',
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -86,7 +112,7 @@ export default {
         },
         "float": {
           "0%, 100%": { transform: "translateY(0px)" },
-          "50%": { transform: "translateY(-10px)" },
+          "50%": { transform: "translateY(-12px)" },
         },
         "pulse-glow": {
           "0%, 100%": { boxShadow: "0 0 20px hsl(var(--primary) / 0.3)" },
@@ -105,19 +131,33 @@ export default {
           to: { opacity: "1", transform: "scale(1)" },
         },
         "shimmer": {
-          "0%": { backgroundPosition: "-200% 0" },
-          "100%": { backgroundPosition: "200% 0" },
+          "0%": { backgroundPosition: "200% 0" },
+          "100%": { backgroundPosition: "-200% 0" },
+        },
+        "glow-pulse": {
+          "0%, 100%": { opacity: "0.4" },
+          "50%": { opacity: "0.8" },
+        },
+        "slide-in-right": {
+          from: { opacity: "0", transform: "translateX(30px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "float": "float 3s ease-in-out infinite",
+        "float": "float 6s ease-in-out infinite",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
         "slide-up": "slide-up 0.5s ease-out",
         "fade-in": "fade-in 0.3s ease-out",
         "scale-in": "scale-in 0.3s ease-out",
-        "shimmer": "shimmer 2s linear infinite",
+        "shimmer": "shimmer 3s linear infinite",
+        "glow-pulse": "glow-pulse 3s ease-in-out infinite",
+        "slide-in-right": "slide-in-right 0.5s ease-out",
+      },
+      backgroundImage: {
+        'hero-gradient': 'linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(30,41,59,0.85) 50%, rgba(15,23,42,0.9) 100%)',
+        'card-shine': 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.05) 100%)',
       },
     },
   },

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, X, MapPin, Maximize, BedDouble, Bath, TrendingUp, TrendingDown, Minus, Loader2 } from "lucide-react";
+import { Plus, X, MapPin, Maximize, BedDouble, Bath, TrendingUp, TrendingDown, Minus, Loader2, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,11 +18,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { getLocations, predictPrice } from "@/services/api";
+import { getLocations, predictPrice, getCities, compareCities } from "@/services/api";
 import { toast } from "sonner";
 
 interface ComparisonProperty {
   id: string;
+  city: string;
   location: string;
   sqft: number;
   bhk: number;
@@ -34,19 +35,38 @@ export function LocationComparison() {
   const [properties, setProperties] = useState<ComparisonProperty[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [selectedCity, setSelectedCity] = useState("delhi");
   const [locations, setLocations] = useState<string[]>([]);
+  const [cities, setCities] = useState<string[]>(["delhi", "bengaluru", "chennai", "hyderabad", "kolkata", "combined"]);
   const [newProperty, setNewProperty] = useState({
+    city: "delhi",
     location: "",
     sqft: "",
     bhk: "",
     bath: "",
   });
   const [openLocation, setOpenLocation] = useState(false);
+  const [openCity, setOpenCity] = useState(false);
+
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const fetchedCities = await getCities();
+        setCities(fetchedCities);
+      } catch (error) {
+        console.error("Failed to fetch cities:", error);
+      }
+    };
+    fetchCities();
+  }, []);
 
   useEffect(() => {
     const fetchLocs = async () => {
+      console.log(`[LocationComparison DEBUG] Fetching locations for: ${selectedCity}`);
       try {
-        const locs = await getLocations();
+        const locs = await getLocations(selectedCity);
+        console.log(`[LocationComparison DEBUG] Received locations:`, locs);
+        console.log(`[LocationComparison DEBUG] Locations count:`, locs?.length || 0);
         setLocations(locs);
       } catch (error) {
         console.error("Failed to fetch locations:", error);
@@ -55,10 +75,10 @@ export function LocationComparison() {
       }
     };
     fetchLocs();
-  }, []);
+  }, [selectedCity]);
 
   const addProperty = async () => {
-    if (!newProperty.location || !newProperty.sqft || !newProperty.bhk || !newProperty.bath) {
+    if (!newProperty.city || !newProperty.location || !newProperty.sqft || !newProperty.bhk || !newProperty.bath) {
       toast.error("Please fill all fields");
       return;
     }
@@ -70,6 +90,7 @@ export function LocationComparison() {
       const bath = parseInt(newProperty.bath);
 
       const price = await predictPrice({
+        city: newProperty.city,
         location: newProperty.location,
         total_sqft: sqft,
         bhk,
@@ -80,6 +101,7 @@ export function LocationComparison() {
         ...properties,
         {
           id: Date.now().toString(),
+          city: newProperty.city,
           location: newProperty.location,
           sqft,
           bhk,
@@ -88,9 +110,9 @@ export function LocationComparison() {
         },
       ]);
 
-      setNewProperty({ location: "", sqft: "", bhk: "", bath: "" });
+      setNewProperty({ city: selectedCity, location: "", sqft: "", bhk: "", bath: "" });
       setShowAddForm(false);
-      toast.success(`Property in ${newProperty.location} added!`);
+      toast.success(`Property in ${newProperty.location}, ${newProperty.city} added!`);
     } catch (error) {
       console.error("Failed to predict price:", error);
       toast.error("Backend error. Make sure the server is running on port 8888.");
@@ -119,8 +141,8 @@ export function LocationComparison() {
       className="w-full"
     >
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-display font-bold mb-2">Compare Locations</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-display font-bold mb-2">Compare Locations</h2>
+        <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
           Add properties to compare AI-predicted prices across different areas
         </p>
       </div>
@@ -209,6 +231,48 @@ export function LocationComparison() {
           >
             <div className="space-y-4">
               <div>
+                <Label className="text-xs font-bold text-muted-foreground uppercase">City</Label>
+                <Popover open={openCity} onOpenChange={setOpenCity}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start text-left font-normal mt-1 border-gray-200 h-10"
+                    >
+                      <Globe className="mr-2 h-4 w-4 text-primary" />
+                      {newProperty.city ? (newProperty.city.charAt(0).toUpperCase() + newProperty.city.slice(1)) : "Select city..."}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search city..." />
+                      <CommandList>
+                        <CommandEmpty>No city found.</CommandEmpty>
+                        <CommandGroup className="max-h-[250px] overflow-y-auto">
+                          {cities.map((c) => (
+                            <CommandItem
+                              key={c}
+                              value={c}
+                              onSelect={(currentValue) => {
+                                const selectedCity = cities.find(ct => ct.toLowerCase() === currentValue.toLowerCase()) || currentValue;
+                                setNewProperty({ ...newProperty, city: selectedCity, location: "" });
+                                setSelectedCity(selectedCity);
+                                setOpenCity(false);
+                              }}
+                              className="capitalize"
+                            >
+                              <Globe className="mr-2 h-4 w-4 text-primary" />
+                              {c.charAt(0).toUpperCase() + c.slice(1)}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div>
                 <Label className="text-xs font-bold text-muted-foreground uppercase">Location</Label>
                 <Popover open={openLocation} onOpenChange={setOpenLocation}>
                   <PopoverTrigger asChild>
@@ -236,8 +300,9 @@ export function LocationComparison() {
                             <CommandItem
                               key={loc}
                               value={loc}
-                              onSelect={() => {
-                                setNewProperty({ ...newProperty, location: loc });
+                              onSelect={(currentValue) => {
+                                const selectedLoc = locations.find(l => l.toLowerCase() === currentValue.toLowerCase()) || currentValue;
+                                setNewProperty({ ...newProperty, location: selectedLoc });
                                 setOpenLocation(false);
                               }}
                               className="capitalize"
@@ -301,7 +366,7 @@ export function LocationComparison() {
                   variant="ghost"
                   onClick={() => {
                     setShowAddForm(false);
-                    setNewProperty({ location: "", sqft: "", bhk: "", bath: "" });
+                    setNewProperty({ city: selectedCity, location: "", sqft: "", bhk: "", bath: "" });
                   }}
                   className="h-10 font-bold"
                 >

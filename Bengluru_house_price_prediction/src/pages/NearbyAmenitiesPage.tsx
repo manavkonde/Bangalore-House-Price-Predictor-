@@ -13,7 +13,8 @@ import {
   ShoppingBag,
   Star,
   Filter,
-  Search
+  Search,
+  Globe
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -28,9 +29,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BANGALORE_LOCATIONS, getLocationCoordinates, AMENITY_TYPES } from "@/data/locations";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { getLocationCoordinates, AMENITY_TYPES } from "@/data/locations";
 import { useAmenities } from "@/lib/osm";
 import { cn } from "@/lib/utils";
+import { getLocations, getCities } from "@/services/api";
 
 // Fix for default marker icons
 const DefaultIcon = L.icon({
@@ -78,6 +93,14 @@ function MapController({ center, zoom }: { center: [number, number]; zoom: numbe
 
   useEffect(() => {
     map.flyTo(center, zoom, { duration: 1.5 });
+    
+    // Fix: Force Leaflet to recalculate map size after animations
+    // Leaflet often fails to load all tiles if the map container is animated or resized
+    const timeout = setTimeout(() => {
+      map.invalidateSize();
+    }, 500);
+    
+    return () => clearTimeout(timeout);
   }, [center, zoom, map]);
 
   return null;
@@ -97,18 +120,63 @@ const createAmenityIcon = (type: string) =>
   });
 
 export default function NearbyAmenitiesPage() {
-  const [selectedLocation, setSelectedLocation] = useState<string>("koramangala");
+  // City selection state
+  const [city, setCity] = useState("bengaluru");
+  const [cities, setCities] = useState<string[]>(["delhi", "bengaluru", "chennai", "hyderabad", "kolkata", "combined"]);
+  const [openCity, setOpenCity] = useState(false);
+
+  // Location & filter state
+  const [apiLocations, setApiLocations] = useState<string[]>([]);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const locationCoords = getLocationCoordinates(selectedLocation);
+  // Fetch available cities on mount
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const fetchedCities = await getCities();
+        setCities(fetchedCities);
+      } catch (error) {
+        console.error('Failed to fetch cities:', error);
+      }
+    };
+    fetchCities();
+  }, []);
+
+  // Fetch locations when city changes
+  useEffect(() => {
+    const fetchLocations = async () => {
+      setIsLoadingLocations(true);
+      try {
+        const locs = await getLocations(city);
+        setApiLocations(locs);
+        // Auto-select first location when city changes
+        if (locs.length > 0) {
+          setSelectedLocation(locs[0]);
+        } else {
+          setSelectedLocation("");
+        }
+      } catch (error) {
+        console.error('Failed to fetch locations:', error);
+        setApiLocations([]);
+        setSelectedLocation("");
+      } finally {
+        setIsLoadingLocations(false);
+      }
+    };
+    fetchLocations();
+  }, [city]);
+
+  const locationCoords = getLocationCoordinates(selectedLocation || "default", city);
   const { data: osmAmenities, isLoading } = useAmenities(locationCoords[1], locationCoords[0]);
 
   const amenities = useMemo(() => {
     if (!osmAmenities) return [];
     return osmAmenities.map(a => ({
       ...a,
-      coords: [a.lon, a.lat] as [number, number], // Map for Leaflet [lon, lat] adjustment if needed or generic usage
+      coords: [a.lon, a.lat] as [number, number],
     }));
   }, [osmAmenities]);
 
@@ -123,34 +191,78 @@ export default function NearbyAmenitiesPage() {
     return acc;
   }, {} as Record<string, typeof filteredAmenities>);
 
-  // Removed duplicate locationCoords definition since it is defined above
-
   return (
     <AppLayout>
       <PageHeader
         title="Nearby Amenities"
-        description="Discover schools, hospitals, parks and more near any location"
+        description={`Discover schools, hospitals, parks and more near any location in ${city.charAt(0).toUpperCase() + city.slice(1)}`}
       />
 
       <div className="grid lg:grid-cols-[1fr,400px] gap-6">
         {/* Main Content */}
         <div className="space-y-6">
-          {/* Filters */}
+          {/* City & Location Filters */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-wrap gap-4"
           >
+            {/* City Selector */}
+            <Popover open={openCity} onOpenChange={setOpenCity}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openCity}
+                  className="w-[180px] h-10 justify-start text-left font-normal border-border/50 hover:border-primary bg-card"
+                >
+                  <Globe className="mr-2 h-4 w-4 text-primary" />
+                  {city ? city.charAt(0).toUpperCase() + city.slice(1) : "Select city..."}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[180px] p-0 z-[1500]" align="start">
+                <Command>
+                  <CommandInput placeholder="Search city..." />
+                  <CommandList>
+                    <CommandEmpty>No city found.</CommandEmpty>
+                    <CommandGroup className="max-h-[300px] overflow-y-auto">
+                      {cities.map((c) => (
+                        <CommandItem
+                          key={c}
+                          value={c}
+                          onSelect={() => {
+                            setCity(c);
+                            setOpenCity(false);
+                          }}
+                          className="capitalize"
+                        >
+                          <Globe className="mr-2 h-4 w-4 text-muted-foreground" />
+                          {c.charAt(0).toUpperCase() + c.slice(1)}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            {/* Location Selector */}
             <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Select location" />
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder={isLoadingLocations ? "Loading..." : "Select location"} />
               </SelectTrigger>
-              <SelectContent>
-                {BANGALORE_LOCATIONS.slice(0, 50).map((loc) => (
-                  <SelectItem key={loc} value={loc} className="capitalize">
-                    {loc}
-                  </SelectItem>
-                ))}
+              <SelectContent className="z-[1500] max-h-[300px]">
+                {isLoadingLocations ? (
+                  <SelectItem value="__loading" disabled>Loading locations...</SelectItem>
+                ) : apiLocations.length === 0 ? (
+                  <SelectItem value="__empty" disabled>No locations available</SelectItem>
+                ) : (
+                  apiLocations.map((loc) => (
+                    <SelectItem key={loc} value={loc} className="capitalize">
+                      {loc}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
 
@@ -206,7 +318,7 @@ export default function NearbyAmenitiesPage() {
             transition={{ delay: 0.2 }}
             className="h-[300px] rounded-2xl overflow-hidden shadow-card border border-border/50 relative"
           >
-            {isLoading && (
+            {(isLoading || isLoadingLocations) && (
               <div className="absolute inset-0 z-[1000] bg-background/50 backdrop-blur-sm flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
@@ -231,7 +343,7 @@ export default function NearbyAmenitiesPage() {
                 <Popup>
                   <div className="p-2">
                     <h3 className="font-semibold capitalize">{selectedLocation}</h3>
-                    <p className="text-sm text-muted-foreground">Selected Location</p>
+                    <p className="text-sm text-muted-foreground">{city.charAt(0).toUpperCase() + city.slice(1)}</p>
                   </div>
                 </Popup>
               </Marker>
@@ -248,7 +360,6 @@ export default function NearbyAmenitiesPage() {
                       <h3 className="font-semibold">{amenity.name}</h3>
                       <div className="flex items-center gap-2 mt-1">
                         <div className="flex items-center gap-1">
-                          {/* OSM doesn't give ratings, but we kept them in the interface */}
                           <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
                           <span className="text-sm">{amenity.rating}</span>
                         </div>

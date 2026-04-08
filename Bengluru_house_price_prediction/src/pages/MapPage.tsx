@@ -18,7 +18,8 @@ import {
   UtensilsCrossed,
   Star,
   IndianRupee,
-  X
+  X,
+  Globe
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -31,11 +32,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BANGALORE_LOCATIONS, getLocationCoordinates, LOCATION_COORDINATES } from "@/data/locations";
+import { getLocationCoordinates, LOCATION_COORDINATES, CITY_DEFAULT_COORDINATES } from "@/data/locations";
 import { cn } from "@/lib/utils";
+import { getLocations, getCities } from "@/services/api";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
 // Price categories for marker colors
 type PriceCategory = "affordable" | "midrange" | "premium";
@@ -122,6 +137,14 @@ function MapController({ center, zoom }: { center: [number, number]; zoom: numbe
 
   useEffect(() => {
     map.flyTo(center, zoom, { duration: 1.5 });
+    
+    // Fix: Force Leaflet to recalculate map size after animations
+    // Leaflet often fails to load all tiles if the map container is animated or resized
+    const timeout = setTimeout(() => {
+      map.invalidateSize();
+    }, 500);
+    
+    return () => clearTimeout(timeout);
   }, [center, zoom, map]);
 
   return null;
@@ -135,8 +158,8 @@ function getPriceCategory(price: number): PriceCategory {
 }
 
 // Generate sample property data
-function generatePropertyData(location: string, index: number): PropertyData {
-  const coords = getLocationCoordinates(location);
+function generatePropertyData(location: string, index: number, city: string = "bengaluru"): PropertyData {
+  const coords = getLocationCoordinates(location, city);
   // Add some variation to coordinates so properties don't overlap
   const offsetCoords: [number, number] = [
     coords[0] + (Math.random() - 0.5) * 0.02,
@@ -166,15 +189,52 @@ export default function MapPage() {
   const [nearbyAmenities, setNearbyAmenities] = useState<NearbyAmenity[]>([]);
   const [isLoadingAmenities, setIsLoadingAmenities] = useState(false);
 
-  // Generate properties for sample locations
-  const properties = useMemo(() => {
-    return Object.keys(LOCATION_COORDINATES)
-      .filter(k => k !== 'default')
-      .map((loc, index) => generatePropertyData(loc, index));
+  // City selection state
+  const [city, setCity] = useState("bengaluru");
+  const [cities, setCities] = useState<string[]>(["delhi", "bengaluru", "chennai", "hyderabad", "kolkata", "combined"]);
+  const [apiLocations, setApiLocations] = useState<string[]>([]);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
+  const [openCity, setOpenCity] = useState(false);
+
+  // Fetch available cities on mount
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const fetchedCities = await getCities();
+        setCities(fetchedCities);
+      } catch (error) {
+        console.error('Failed to fetch cities:', error);
+      }
+    };
+    fetchCities();
   }, []);
 
-  const sampleLocations = useMemo(() => Object.keys(LOCATION_COORDINATES).filter(k => k !== 'default'), []);
+  // Fetch locations when city changes
+  useEffect(() => {
+    const fetchLocations = async () => {
+      setIsLoadingLocations(true);
+      try {
+        const locs = await getLocations(city);
+        setApiLocations(locs);
+      } catch (error) {
+        console.error('Failed to fetch locations:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load locations",
+          variant: "destructive",
+        });
+        setApiLocations([]);
+      } finally {
+        setIsLoadingLocations(false);
+      }
+    };
+    fetchLocations();
+  }, [city, toast]);
 
+  // Generate properties for API locations
+  const properties = useMemo(() => {
+    return apiLocations.map((loc, index) => generatePropertyData(loc, index, city));
+  }, [apiLocations, city]);
 
   // Fetch real amenities from Overpass API via edge function
   useEffect(() => {
@@ -290,7 +350,9 @@ export default function MapPage() {
   // Map center
   const mapCenter = selectedProperty
     ? selectedProperty.coords
-    : [77.5946, 12.9716] as [number, number];
+    : apiLocations.length > 0
+      ? getLocationCoordinates(apiLocations[0], city)
+      : (CITY_DEFAULT_COORDINATES[city] || CITY_DEFAULT_COORDINATES["bengaluru"]) as [number, number];
 
   const tileUrl = mapStyle === "satellite"
     ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
@@ -303,8 +365,8 @@ export default function MapPage() {
   return (
     <AppLayout>
       <PageHeader
-        title="Property Price & Nearby Amenities – Bengaluru"
-        description="Explore property locations and discover nearby amenities across Bangalore"
+        title="Property Price & Nearby Amenities"
+        description={`Explore property locations and discover nearby amenities across ${city.charAt(0).toUpperCase() + city.slice(1)}`}
       />
 
       <div className="grid lg:grid-cols-[1fr,380px] gap-6 h-[calc(100vh-120px)] min-h-[750px]">
@@ -483,6 +545,51 @@ export default function MapPage() {
           animate={{ opacity: 1, x: 0 }}
           className="flex flex-col gap-4 overflow-hidden"
         >
+          {/* City Selector */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Globe className="h-4 w-4" /> City
+            </label>
+            <Popover open={openCity} onOpenChange={setOpenCity}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openCity}
+                  className="w-full h-10 justify-start text-left font-normal border-border/50 hover:border-primary bg-card"
+                >
+                  <Globe className="mr-2 h-4 w-4 text-primary" />
+                  {city ? city.charAt(0).toUpperCase() + city.slice(1) : "Select city..."}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0 z-[1500]" align="start">
+                <Command>
+                  <CommandInput placeholder="Search city..." />
+                  <CommandList>
+                    <CommandEmpty>No city found.</CommandEmpty>
+                    <CommandGroup className="max-h-[300px] overflow-y-auto">
+                      {cities.map((c) => (
+                        <CommandItem
+                          key={c}
+                          value={c}
+                          onSelect={() => {
+                            setCity(c);
+                            setOpenCity(false);
+                            setSelectedProperty(null);
+                          }}
+                          className="capitalize"
+                        >
+                          <Globe className="mr-2 h-4 w-4 text-muted-foreground" />
+                          {c.charAt(0).toUpperCase() + c.slice(1)}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+
           <Tabs defaultValue="properties" className="flex-1 flex flex-col overflow-hidden">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="properties">Properties</TabsTrigger>
@@ -492,79 +599,93 @@ export default function MapPage() {
             </TabsList>
 
             <TabsContent value="properties" className="flex-1 overflow-hidden flex flex-col gap-4 mt-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search locations..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+              {isLoadingLocations ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                <>
+                  {/* Search */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search locations..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
 
-              {/* Jump to location */}
-              <Select
-                value={selectedProperty?.location || ""}
-                onValueChange={(loc) => {
-                  const property = properties.find(p => p.location === loc);
-                  if (property) setSelectedProperty(property);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Jump to location" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sampleLocations.map((loc) => (
-                    <SelectItem key={loc} value={loc} className="capitalize">
-                      {loc}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Property List */}
-              <div className="space-y-2 flex-1 overflow-y-auto pr-2">
-                <p className="text-sm text-muted-foreground mb-2">
-                  {filteredProperties.length} Properties Found
-                </p>
-                {filteredProperties.map((property) => (
-                  <Card
-                    key={property.id}
-                    className={cn(
-                      "cursor-pointer transition-all hover:shadow-hover",
-                      selectedProperty?.id === property.id && "border-primary bg-primary/5"
-                    )}
-                    onClick={() => handlePropertyClick(property)}
+                  {/* Jump to location */}
+                  <Select
+                    value={selectedProperty?.location || ""}
+                    onValueChange={(loc) => {
+                      const property = properties.find(p => p.location === loc);
+                      if (property) setSelectedProperty(property);
+                    }}
                   >
-                    <CardContent className="p-3">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-10 h-10 rounded-lg flex items-center justify-center"
-                          style={{ backgroundColor: `${priceColors[property.priceCategory]}20` }}
-                        >
-                          <Building2
-                            className="h-5 w-5"
-                            style={{ color: priceColors[property.priceCategory] }}
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium capitalize truncate">{property.location}</p>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span className="font-semibold" style={{ color: priceColors[property.priceCategory] }}>
-                              ₹{property.price}L
-                            </span>
-                            <span>•</span>
-                            <span>{property.bhk} BHK</span>
-                            <span>•</span>
-                            <span>{property.sqft} sqft</span>
-                          </div>
-                        </div>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Jump to location" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[1500]">
+                      {apiLocations.map((loc) => (
+                        <SelectItem key={loc} value={loc} className="capitalize">
+                          {loc}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Property List */}
+                  <div className="space-y-2 flex-1 overflow-y-auto pr-2">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {filteredProperties.length} Properties Found
+                    </p>
+                    {filteredProperties.length === 0 ? (
+                      <div className="flex items-center justify-center py-8">
+                        <p className="text-sm text-muted-foreground">No properties found for this search</p>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                    ) : (
+                      filteredProperties.map((property) => (
+                        <Card
+                          key={property.id}
+                          className={cn(
+                            "cursor-pointer transition-all hover:shadow-hover",
+                            selectedProperty?.id === property.id && "border-primary bg-primary/5"
+                          )}
+                          onClick={() => handlePropertyClick(property)}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                                style={{ backgroundColor: `${priceColors[property.priceCategory]}20` }}
+                              >
+                                <Building2
+                                  className="h-5 w-5"
+                                  style={{ color: priceColors[property.priceCategory] }}
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium capitalize truncate">{property.location}</p>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <span className="font-semibold" style={{ color: priceColors[property.priceCategory] }}>
+                                    ₹{property.price}L
+                                  </span>
+                                  <span>•</span>
+                                  <span>{property.bhk} BHK</span>
+                                  <span>•</span>
+                                  <span>{property.sqft} sqft</span>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                </>
+              )}
             </TabsContent>
 
             <TabsContent value="amenities" className="flex-1 overflow-hidden flex flex-col gap-4 mt-4">

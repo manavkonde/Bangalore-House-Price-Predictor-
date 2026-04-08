@@ -23,14 +23,14 @@ export function Header() {
       className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl"
     >
       <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex h-14 sm:h-16 items-center justify-between py-2 sm:py-0">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-primary-foreground" />
+            <div className="w-9 sm:w-10 h-9 sm:h-10 rounded-xl bg-gradient-primary flex items-center justify-center flex-shrink-0">
+              <Building2 className="h-4 sm:h-5 w-4 sm:w-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-display font-bold text-lg leading-tight">BangaloreHomes</h1>
+              <h1 className="font-display font-bold text-base sm:text-lg leading-tight">BangaloreHomes</h1>
               <p className="text-xs text-muted-foreground -mt-0.5">Price Predictor</p>
             </div>
           </Link>
@@ -82,7 +82,7 @@ export function Header() {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className="md:hidden min-h-[44px] min-w-[44px]"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

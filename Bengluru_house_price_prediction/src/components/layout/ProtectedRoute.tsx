@@ -3,9 +3,10 @@ import { useAuth } from "@/hooks/useAuth";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requireAuth?: boolean;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requireAuth = false }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -20,9 +21,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  if (!user) {
+  // If auth is required and user is not logged in, redirect to login
+  if (requireAuth && !user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Allow access to non-auth-required pages and logged-in users
   return <>{children}</>;
 }

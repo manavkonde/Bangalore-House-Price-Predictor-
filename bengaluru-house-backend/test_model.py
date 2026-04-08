@@ -1,17 +1,24 @@
-import util
+import pickle
+import numpy as np
 
+# Load Delhi model and check its expectations
+with open('delhi_gradientboosting_model.pickle', 'rb') as f:
+    model = pickle.load(f)
+
+print(f"Model type: {type(model)}")
+print(f"Model n_features_in_: {model.n_features_in_}")
+
+# Try a simple prediction with right number of features
+test_X = np.random.rand(1, 40)  # 40 features
 try:
-    util.load_save_artifacts()
-    print("✅ Model loaded successfully")
-
-    # Test prediction
-    result = util.get_estimated_price("indira nagar", 1200, 2, 2)
-    print(f"✅ Prediction test successful: ₹{result} Lakhs")
-
-    locations = util.get_location_names()
-    print(f"✅ Locations loaded: {len(locations)} locations")
-
+    pred = model.predict(test_X)
+    print(f"✓ Prediction with 40 features works: {pred}")
 except Exception as e:
-    print(f"❌ Error: {e}")
-    import traceback
-    traceback.print_exc()
+    print(f"✗ Error with 40 features: {e}")
+
+test_X_39 = np.random.rand(1, 39)  # 39 features
+try:
+    pred = model.predict(test_X_39)
+    print(f"✓ Prediction with 39 features works: {pred}")
+except Exception as e:
+    print(f"✗ Error with 39 features: {e}")

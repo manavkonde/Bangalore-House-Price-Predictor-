@@ -1,14 +1,22 @@
 import { motion } from "framer-motion";
-import { Building2, Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
+import { Building2, Menu, X, User, LogOut, LayoutDashboard, Moon, Sun, Monitor } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { theme, setTheme, resolvedTheme } = useTheme();
+
+  const cycleTheme = () => {
+    if (theme === "light") setTheme("dark");
+    else if (theme === "dark") setTheme("system");
+    else setTheme("light");
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -49,6 +57,25 @@ export function Header() {
             <Link to="/nearby-amenities" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Amenities
             </Link>
+            <Link to="/emi-calculator" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              EMI Calculator
+            </Link>
+            <Link to="/roi-analyzer" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              ROI Analyzer
+            </Link>
+            <button
+              onClick={cycleTheme}
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
+              title={`Theme: ${theme}`}
+            >
+              {theme === "system" ? (
+                <Monitor className="h-4 w-4" />
+              ) : resolvedTheme === "dark" ? (
+                <Moon className="h-4 w-4" />
+              ) : (
+                <Sun className="h-4 w-4" />
+              )}
+            </button>
           </nav>
 
           {/* CTA */}
@@ -109,6 +136,12 @@ export function Header() {
               </Link>
               <Link to="/nearby-amenities" onClick={() => setIsMenuOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2">
                 Amenities
+              </Link>
+              <Link to="/emi-calculator" onClick={() => setIsMenuOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2">
+                EMI Calculator
+              </Link>
+              <Link to="/roi-analyzer" onClick={() => setIsMenuOpen(false)} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2">
+                ROI Analyzer
               </Link>
               {user ? (
                 <>

@@ -330,3 +330,55 @@ html {
   background: transparent;
   border: none;
 }
+
+/* Dark mode overrides for hardcoded colors */
+.dark .bg-white {
+  background-color: hsl(220 25% 10%);
+}
+
+.dark .bg-blue-50 {
+  background-color: hsl(220 30% 14%);
+}
+
+.dark .bg-amber-50 {
+  background-color: hsl(35 30% 14%);
+}
+
+.dark .bg-rose-50 {
+  background-color: hsl(350 30% 14%);
+}
+
+.dark .text-blue-900 {
+  color: hsl(215 80% 70%);
+}
+
+.dark .text-gray-600 {
+  color: hsl(220 15% 65%);
+}
+
+.dark .text-gray-500 {
+  color: hsl(220 15% 55%);
+}
+
+.dark .border-blue-200 {
+  border-color: hsl(215 30% 25%);
+}
+
+.dark .border-amber-200\/50 {
+  border-color: hsl(38 30% 25% / 0.5);
+}
+
+.dark .border-rose-200\/50 {
+  border-color: hsl(350 30% 25% / 0.5);
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: hsl(220 25% 10%);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(220 20% 25%);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(220 25% 35%);
+}

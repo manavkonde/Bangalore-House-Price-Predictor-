@@ -13,10 +13,17 @@ import {
   Building2,
   User,
   Home,
-  Sparkles
+  Sparkles,
+  Moon,
+  Sun,
+  Monitor,
+  IndianRupee,
+  TrendingUp,
+  Database
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -45,6 +52,21 @@ const navItems = [
     href: "/nearby-amenities", 
     icon: MapPin 
   },
+  {
+    title: "Data Health",
+    href: "/data-health",
+    icon: Database
+  },
+  {
+    title: "EMI Calculator",
+    href: "/emi-calculator",
+    icon: IndianRupee
+  },
+  {
+    title: "ROI Analyzer",
+    href: "/roi-analyzer",
+    icon: TrendingUp
+  }
 ];
 
 export function Sidebar() {
@@ -52,6 +74,13 @@ export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { theme, setTheme, resolvedTheme } = useTheme();
+
+  const cycleTheme = () => {
+    if (theme === "light") setTheme("dark");
+    else if (theme === "dark") setTheme("system");
+    else setTheme("light");
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -219,6 +248,38 @@ export function Sidebar() {
               )}
             </AnimatePresence>
           </div>
+
+          {/* Theme toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={cycleTheme}
+            className={cn(
+              "w-full text-white/60 hover:text-white hover:bg-white/10 rounded-xl",
+              collapsed ? "justify-center px-2" : "justify-start"
+            )}
+            title={`Theme: ${theme}`}
+          >
+            {theme === "system" ? (
+              <Monitor className="h-4 w-4 shrink-0" />
+            ) : resolvedTheme === "dark" ? (
+              <Moon className="h-4 w-4 shrink-0" />
+            ) : (
+              <Sun className="h-4 w-4 shrink-0" />
+            )}
+            <AnimatePresence mode="wait">
+              {!collapsed && (
+                <motion.span
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: "auto" }}
+                  exit={{ opacity: 0, width: 0 }}
+                  className="ml-2 whitespace-nowrap overflow-hidden"
+                >
+                  {theme === "system" ? "System" : theme === "dark" ? "Dark" : "Light"}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Button>
 
           {/* Logout button */}
           <Button

@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   IndianRupee,
@@ -11,8 +12,13 @@ import {
   BarChart3,
   Info,
   Award,
-  Building2
+  Building2,
+  Download,
+  Share2,
+  Copy,
+  Check
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   LineChart,
   Line,
@@ -27,6 +33,7 @@ import {
 } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfidenceIndicator } from "./ConfidenceIndicator";
+import { generatePredictionPDF } from "@/utils/generatePDF";
 
 interface PriceResultProps {
   price: number;
@@ -105,6 +112,46 @@ export function PriceResult({
   }, [price, currentYear]);
 
   const futurePrice5Years = chartData[chartData.length - 1].price;
+  const [copied, setCopied] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    try {
+      await generatePredictionPDF({
+        price,
+        city,
+        location,
+        sqft,
+        bhk,
+        bath,
+        confidence,
+        priceRange: priceRange ? { min: priceRange.min, max: priceRange.max, median: priceRange.median } : undefined,
+        dataPoints,
+      });
+      toast.success("PDF report downloaded successfully!");
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      toast.error("Failed to generate PDF report.");
+    }
+  };
+
+  const handleShare = async () => {
+    const params = new URLSearchParams({
+      city: city || "",
+      location,
+      sqft: sqft.toString(),
+      bhk: bhk.toString(),
+      bath: bath.toString(),
+    });
+    const shareUrl = `${window.location.origin}/estimate-price?${params.toString()}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      toast.success("Share link copied to clipboard!");
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      toast.error("Failed to copy link.");
+    }
+  };
 
   return (
     <motion.div
@@ -268,6 +315,51 @@ export function PriceResult({
                   ₹{formatPrice(futurePrice5Years)}
                 </span>
               </motion.div>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-2">
+              <div className="flex gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleDownloadPDF}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-navy-800 to-navy-900 text-white text-sm font-semibold hover:shadow-lg transition-all"
+                >
+                  <Download className="h-4 w-4" />
+                  Download Report
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleShare}
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-border/50 text-foreground text-sm font-semibold hover:bg-muted/50 transition-all"
+                >
+                  {copied ? <Check className="h-4 w-4 text-green-500" /> : <Share2 className="h-4 w-4" />}
+                  {copied ? "Copied!" : "Share"}
+                </motion.button>
+              </div>
+              <div className="flex gap-2 mt-1">
+                <Link to={`/emi-calculator?amount=${(price/100000).toFixed(2)}`} className="flex-1">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-sm font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800/50 transition-all"
+                  >
+                    <IndianRupee className="h-4 w-4" />
+                    EMI Calculator
+                  </motion.div>
+                </Link>
+                <Link to={`/roi-analyzer?amount=${(price/100000).toFixed(2)}`} className="flex-1">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-sm font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800/50 transition-all"
+                  >
+                    <TrendingUp className="h-4 w-4" />
+                    ROI Analyzer
+                  </motion.div>
+                </Link>
+              </div>
             </div>
           </TabsContent>
 

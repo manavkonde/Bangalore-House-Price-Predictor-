@@ -17,8 +17,22 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
 
 interface SearchHistoryItem {
   id: string;
@@ -160,21 +174,21 @@ export default function DashboardPage() {
           { 
             icon: History, 
             label: "Total Searches", 
-            value: loading ? "—" : searchHistory.length.toString(),
+            value: loading ? <Skeleton className="h-9 w-16" /> : searchHistory.length.toString(),
             gradient: "from-blue-500 to-indigo-500",
             bgGlow: "bg-blue-500/5"
           },
           { 
             icon: IndianRupee, 
             label: "Avg. Predicted Price", 
-            value: loading ? "—" : avgPrice > 0 ? `₹${avgPrice.toFixed(1)}L` : "—",
+            value: loading ? <Skeleton className="h-9 w-24" /> : avgPrice > 0 ? `₹${avgPrice.toFixed(1)}L` : "—",
             gradient: "from-amber-500 to-orange-500",
             bgGlow: "bg-amber-500/5"
           },
           { 
             icon: MapPin, 
             label: "Locations Explored", 
-            value: loading ? "—" : uniqueLocations.toString(),
+            value: loading ? <Skeleton className="h-9 w-12" /> : uniqueLocations.toString(),
             gradient: "from-emerald-500 to-teal-500",
             bgGlow: "bg-emerald-500/5"
           },
@@ -194,9 +208,9 @@ export default function DashboardPage() {
                       <stat.icon className="h-4 w-4" />
                       {stat.label}
                     </p>
-                    <p className="text-3xl font-display font-bold text-foreground">
+                    <div className="text-3xl font-display font-bold text-foreground">
                       {stat.value}
-                    </p>
+                    </div>
                   </div>
                   <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-lg`}>
                     <stat.icon className="h-7 w-7 text-white" />
@@ -207,6 +221,125 @@ export default function DashboardPage() {
           </motion.div>
         ))}
       </motion.div>
+
+      {/* F4: Prediction History Charts */}
+      {!loading && searchHistory.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8"
+        >
+          {/* Price History Bar Chart */}
+          <Card className="lg:col-span-2 border-border/40 shadow-card overflow-hidden">
+            <CardHeader className="border-b border-border/40 bg-muted/20 pb-3">
+              <CardTitle className="flex items-center gap-2 font-display text-base">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
+                  <BarChart3 className="h-3.5 w-3.5 text-white" />
+                </div>
+                Prediction History
+              </CardTitle>
+              <CardDescription className="text-xs">Your recent price predictions</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="h-[220px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={searchHistory.slice(0, 10).reverse().map((s) => ({
+                      location: s.location.length > 10 ? s.location.slice(0, 10) + "…" : s.location,
+                      price: Number(s.predicted_price),
+                      fill: Number(s.predicted_price) < 50 ? "#22c55e" : Number(s.predicted_price) < 100 ? "#f59e0b" : "#ef4444",
+                    }))}
+                    margin={{ top: 5, right: 10, left: -15, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
+                    <XAxis dataKey="location" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}L`} />
+                    <Tooltip
+                      formatter={(value: number) => [`₹${value.toFixed(1)}L`, "Price"]}
+                      contentStyle={{
+                        borderRadius: "10px",
+                        border: "1px solid hsl(var(--border))",
+                        backgroundColor: "hsl(var(--background))",
+                        boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                        fontFamily: "Inter, sans-serif",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Bar
+                      dataKey="price"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={40}
+                    >
+                      {searchHistory.slice(0, 10).reverse().map((s, i) => (
+                        <Cell
+                          key={i}
+                          fill={Number(s.predicted_price) < 50 ? "#22c55e" : Number(s.predicted_price) < 100 ? "#f59e0b" : "#ef4444"}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex gap-4 justify-center mt-2 text-[10px] text-muted-foreground">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> &lt;50L</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> 50-100L</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> &gt;100L</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* BHK Distribution Pie Chart */}
+          <Card className="border-border/40 shadow-card overflow-hidden">
+            <CardHeader className="border-b border-border/40 bg-muted/20 pb-3">
+              <CardTitle className="flex items-center gap-2 font-display text-base">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
+                  <TrendingUp className="h-3.5 w-3.5 text-white" />
+                </div>
+                BHK Distribution
+              </CardTitle>
+              <CardDescription className="text-xs">Your searched configurations</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="h-[220px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={(() => {
+                        const bhkCounts: Record<string, number> = {};
+                        searchHistory.forEach((s) => {
+                          const key = `${s.bhk} BHK`;
+                          bhkCounts[key] = (bhkCounts[key] || 0) + 1;
+                        });
+                        return Object.entries(bhkCounts).map(([name, value]) => ({ name, value }));
+                      })()}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={70}
+                      paddingAngle={4}
+                      dataKey="value"
+                    >
+                      {["#f59e0b", "#3b82f6", "#22c55e", "#8b5cf6", "#ef4444", "#06b6d4"].map((color, i) => (
+                        <Cell key={i} fill={color} />
+                      ))}
+                    </Pie>
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "11px", fontFamily: "Inter" }} />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: "10px",
+                        border: "1px solid hsl(var(--border))",
+                        backgroundColor: "hsl(var(--background))",
+                        fontSize: "12px",
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Feature Cards */}
       <motion.div
@@ -269,13 +402,23 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="pt-4">
             {loading ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full mx-auto mb-4"
-                />
-                Loading...
+              <div className="space-y-3 py-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-border/40 bg-muted/10 gap-4">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-4" />
+                        <Skeleton className="h-5 w-32" />
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-4 w-12" />
+                        <Skeleton className="h-4 w-16" />
+                        <Skeleton className="h-4 w-16" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-8 w-24" />
+                  </div>
+                ))}
               </div>
             ) : searchHistory.length === 0 ? (
               <div className="text-center py-12">

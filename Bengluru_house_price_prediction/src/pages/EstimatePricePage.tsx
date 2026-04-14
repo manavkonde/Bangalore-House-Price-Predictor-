@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PredictionForm } from "@/components/PredictionForm";
 import { PriceResult } from "@/components/PriceResult";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -35,7 +36,29 @@ export default function EstimatePricePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<PredictionResult | null>(null);
   const { user } = useAuth();
+  const hasAutoTriggered = useRef(false);
 
+  // F3: Auto-fill from shared URL params
+  useEffect(() => {
+    if (hasAutoTriggered.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const city = params.get("city");
+    const location = params.get("location");
+    const sqft = params.get("sqft");
+    const bhk = params.get("bhk");
+    const bath = params.get("bath");
+
+    if (city && location && sqft && bhk && bath) {
+      hasAutoTriggered.current = true;
+      handlePredict({
+        city,
+        location,
+        sqft: Number(sqft),
+        bhk: Number(bhk),
+        bath: Number(bath),
+      });
+    }
+  }, []);
   const handlePredict = async (data: PredictionData) => {
     setIsLoading(true);
 
@@ -124,10 +147,44 @@ export default function EstimatePricePage() {
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="flex flex-col"
+          className="flex flex-col h-full"
         >
           <AnimatePresence mode="wait">
-            {result ? (
+            {isLoading ? (
+              <motion.div
+                key="loading-skeleton"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="h-full min-h-[500px] bg-card rounded-3xl border border-border/30 p-6 flex flex-col space-y-6 overflow-hidden shadow-card relative"
+              >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
+                <div className="flex flex-col gap-2">
+                  <Skeleton className="h-6 w-32 rounded-lg" />
+                  <Skeleton className="h-12 w-3/4 rounded-xl" />
+                  <Skeleton className="h-4 w-48 rounded-lg" />
+                </div>
+                
+                <div className="pt-4 border-t border-border/30 space-y-4">
+                   <div className="grid grid-cols-2 gap-4">
+                     {[1, 2, 3, 4].map((i) => (
+                       <div key={i} className="flex gap-3">
+                         <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
+                         <div className="space-y-2 flex-1">
+                           <Skeleton className="h-4 w-full" />
+                           <Skeleton className="h-3 w-1/2" />
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                </div>
+
+                <div className="mt-8 flex gap-3">
+                   <Skeleton className="h-12 flex-1 rounded-xl" />
+                   <Skeleton className="h-12 flex-1 rounded-xl" />
+                </div>
+              </motion.div>
+            ) : result ? (
               <PriceResult
                 key="result"
                 price={result.price}

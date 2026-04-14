@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ThemeProvider } from "@/hooks/useTheme";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import TestPage from "./pages/TestPage";
 import LoginPage from "./pages/LoginPage";
@@ -17,6 +18,9 @@ import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 import { DebugLocationsPage } from "./pages/DebugLocationsPage";
 import SimpleEstimateTestPage from "./pages/SimpleEstimateTestPage";
+import EMICalculatorPage from "./pages/EMICalculatorPage";
+import ROIAnalyzerPage from "./pages/ROIAnalyzerPage";
+import DataHealthPage from "./pages/DataHealthPage";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +71,7 @@ const App = () => {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <ThemeProvider>
           <TooltipProvider>
             <Toaster />
             <Sonner />
@@ -82,10 +87,14 @@ const App = () => {
                 <Route path="/comparison" element={<ProtectedRoute><ComparisonPage /></ProtectedRoute>} />
                 <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
                 <Route path="/nearby-amenities" element={<ProtectedRoute><NearbyAmenitiesPage /></ProtectedRoute>} />
+                <Route path="/data-health" element={<ProtectedRoute><DataHealthPage /></ProtectedRoute>} />
+                <Route path="/emi-calculator" element={<ProtectedRoute><EMICalculatorPage /></ProtectedRoute>} />
+                <Route path="/roi-analyzer" element={<ProtectedRoute><ROIAnalyzerPage /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
           </TooltipProvider>
+          </ThemeProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>

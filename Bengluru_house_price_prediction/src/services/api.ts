@@ -49,6 +49,32 @@ export interface CitiesResponse {
   count: number;
 }
 
+interface CityLocationsResponse {
+  locations: string[];
+}
+
+interface CityPredictResponse {
+  predicted_price: number;
+  confidence?: "HIGH" | "MEDIUM" | "LOW";
+  warning?: string;
+  price_range?: {
+    min: number;
+    max: number;
+    median: number;
+    [key: string]: number;
+  };
+  data_points_used?: number;
+}
+
+interface CityPredictionItem {
+  status: string;
+  predicted_price?: number;
+}
+
+interface CompareCitiesResponse {
+  city_predictions?: Record<string, CityPredictionItem>;
+}
+
 // API Methods
 export const getCities = async (): Promise<string[]> => {
   try {
@@ -65,7 +91,7 @@ export const getLocations = async (city?: string): Promise<string[]> => {
     if (city) {
       console.log(`[API] Fetching locations for city: ${city}`);
 
-      const response = await api.get<any>(`/api/locations/${city}`);
+      const response = await api.get<CityLocationsResponse>(`/api/locations/${city}`);
 
       const locations = response.data.locations;
 
@@ -135,7 +161,7 @@ export const predictPrice = async (data: PredictionRequest): Promise<PredictionR
     // Try new city-wise API first
     if (data.city) {
       try {
-        const response = await api.post<any>('/api/predict', {
+        const response = await api.post<CityPredictResponse>('/api/predict', {
           city: data.city,
           location: data.location,
           area: data.total_sqft || data.area,
@@ -178,7 +204,7 @@ export const compareCities = async (
   bathrooms?: number
 ): Promise<Record<string, number>> => {
   try {
-    const response = await api.post<any>('/api/compare-cities', {
+    const response = await api.post<CompareCitiesResponse>('/api/compare-cities', {
       location,
       area,
       bedrooms,
@@ -187,8 +213,8 @@ export const compareCities = async (
 
     const predictions: Record<string, number> = {};
     for (const [city, data] of Object.entries(response.data.city_predictions || {})) {
-      if ((data as any).status === 'success') {
-        predictions[city] = (data as any).predicted_price;
+      if (data.status === 'success' && typeof data.predicted_price === 'number') {
+        predictions[city] = data.predicted_price;
       }
     }
     return predictions;

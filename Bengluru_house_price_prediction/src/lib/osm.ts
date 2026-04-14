@@ -12,6 +12,17 @@ export interface Amenity {
 
 const OVERPASS_API_URL = "https://overpass-api.de/api/interpreter";
 
+interface OverpassElement {
+  id: number | string;
+  lat: number;
+  lon: number;
+  tags?: Record<string, string>;
+}
+
+interface OverpassResponse {
+  elements?: OverpassElement[];
+}
+
 // Map our app's amenity types to OSM tags
 const AMENITY_TAGS: Record<string, string> = {
   school: '["amenity"="school"]',
@@ -102,12 +113,12 @@ async function fetchAmenitiesFromOSM(lat: number, lon: number, radius: number = 
   }
 }
 
-function parseOverpassResponse(data: any, centerLat: number, centerLon: number): Amenity[] {
+function parseOverpassResponse(data: OverpassResponse, centerLat: number, centerLon: number): Amenity[] {
   if (!data || !data.elements) return [];
 
   return data.elements
-    .filter((el: any) => el.tags && (el.tags.name || el.tags.amenity || el.tags.leisure || el.tags.shop))
-    .map((el: any) => {
+    .filter((el) => el.tags && (el.tags.name || el.tags.amenity || el.tags.leisure || el.tags.shop))
+    .map((el) => {
       const type = determineType(el.tags);
       const name = el.tags.name || `${type.charAt(0).toUpperCase() + type.slice(1)}`;
       const distanceVal = getDistanceFromLatLonInKm(centerLat, centerLon, el.lat, el.lon);
@@ -124,7 +135,8 @@ function parseOverpassResponse(data: any, centerLat: number, centerLon: number):
     });
 }
 
-function determineType(tags: any): string {
+function determineType(tags: Record<string, string> | undefined): string {
+  if (!tags) return "other";
   if (tags.amenity === "school") return "school";
   if (tags.amenity === "hospital" || tags.amenity === "clinic") return "hospital";
   if (tags.amenity === "restaurant") return "restaurant";
@@ -136,15 +148,15 @@ function determineType(tags: any): string {
 
 // Distance calculation using Haversine formula
 function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-  var R = 6371; // Radius of the earth in km
-  var dLat = deg2rad(lat2 - lat1);
-  var dLon = deg2rad(lon2 - lon1);
-  var a =
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  var d = R * c; // Distance in km
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in km
   return d;
 }
 

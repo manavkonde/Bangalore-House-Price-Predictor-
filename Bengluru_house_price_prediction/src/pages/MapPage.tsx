@@ -98,6 +98,15 @@ interface NearbyAmenity {
   rating: number;
 }
 
+interface NearbyAmenityApiItem {
+  id: string;
+  name: string;
+  type: string;
+  distance: number;
+  coords: [number, number];
+  rating: number;
+}
+
 // Create price-based property marker
 const createPropertyIcon = (priceCategory: PriceCategory, isSelected: boolean) =>
   L.divIcon({
@@ -269,7 +278,7 @@ export default function MapPage() {
 
         if (data?.success && data?.data) {
           // Map the response to our NearbyAmenity type
-          const mappedAmenities: NearbyAmenity[] = data.data.map((item: any) => ({
+          const mappedAmenities: NearbyAmenity[] = (data.data as NearbyAmenityApiItem[]).map((item) => ({
             id: item.id,
             name: item.name,
             type: item.type as AmenityType,

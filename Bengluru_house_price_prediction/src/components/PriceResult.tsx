@@ -386,7 +386,7 @@ export function PriceResult({
                   <XAxis dataKey="year" fontSize={12} tickLine={false} axisLine={false} dy={10} />
                   <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val >= 100 ? (val / 100).toFixed(1) + 'C' : val.toFixed(0) + 'L'}`} dx={-10} />
                   <RechartsTooltip
-                    formatter={(value: any) => [`₹${formatPrice(Number(value))}`, "Est. Price"]}
+                    formatter={(value: unknown) => [`₹${formatPrice(Number(value))}`, "Est. Price"]}
                     labelStyle={{ color: 'var(--foreground)', fontWeight: 'bold', marginBottom: '4px' }}
                     contentStyle={{ borderRadius: '12px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--background))', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontFamily: 'Inter, sans-serif' }}
                   />
@@ -417,7 +417,7 @@ export function PriceResult({
                   <XAxis dataKey="year" fontSize={12} tickLine={false} axisLine={false} dy={10} />
                   <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val >= 100 ? (val / 100).toFixed(1) + 'C' : val.toFixed(0) + 'L'}`} dx={-10} />
                   <RechartsTooltip
-                    formatter={(value: any, name: string) => [
+                    formatter={(value: unknown, name: string) => [
                       `₹${formatPrice(Number(value))}`,
                       name === 'price' ? 'Nominal Market Price' : 'Real Value (Today\'s ₹)'
                     ]}
